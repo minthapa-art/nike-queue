@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FLOOR — Nike Queue</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black:#080808;--white:#f0f0f0;--red:#e31837;--red-dark:#a8102a;
+    --gray:#161616;--gray2:#222;--gray3:#333;--gray4:#555;--muted:#777;
+    --mens:#1a6fc4;--mens-dark:#1358a0;--womens:#b5428a;--womens-dark:#8f3370;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;background:var(--black);color:var(--white);font-family:'Barlow',sans-serif;overscroll-behavior:none;}
+  .screen{display:none;flex-direction:column;height:100vh;overflow:hidden;}
+  .screen.active{display:flex;}
+
+  /* FLOOR PICKER */
+  #floor-screen{justify-content:center;align-items:center;padding:32px 24px;}
+  .floor-brand{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;text-align:center;}
+  .floor-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:52px;line-height:0.9;letter-spacing:-2px;text-align:center;margin-bottom:40px;}
+  .floor-cards{width:100%;display:flex;flex-direction:column;gap:14px;max-width:360px;}
+  .floor-card{border-radius:12px;padding:24px 22px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;transition:transform 0.12s;border:2px solid transparent;position:relative;overflow:hidden;}
+  .floor-card::before{content:'';position:absolute;inset:0;opacity:0.08;background:#fff;transition:opacity 0.12s;}
+  .floor-card:hover{transform:translateY(-2px);}
+  .floor-card:hover::before{opacity:0.14;}
+  .floor-card.mens{background:var(--mens);}
+  .floor-card.womens{background:var(--womens);}
+  .fc-label{font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:0.7;margin-bottom:3px;font-weight:600;}
+  .fc-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:36px;line-height:1;letter-spacing:-0.5px;}
+  .fc-count{margin-top:5px;font-size:13px;opacity:0.75;}
+  .fc-icon{font-size:44px;opacity:0.85;}
+  .setup-link{margin-top:20px;background:none;border:1px solid var(--gray3);color:var(--muted);padding:12px 28px;border-radius:30px;cursor:pointer;font-family:'Barlow',sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;transition:all 0.12s;}
+  .setup-link:hover{border-color:var(--white);color:var(--white);}
+
+  /* ADMIN SCREEN */
+  #admin-screen{background:var(--black);}
+  .admin-header{flex-shrink:0;background:var(--gray);border-bottom:1px solid var(--gray2);padding:20px 20px 16px;display:flex;align-items:center;justify-content:space-between;}
+  .admin-header h2{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:28px;letter-spacing:-0.5px;}
+  .admin-done-btn{background:var(--red);border:none;color:#fff;padding:10px 22px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;transition:background 0.12s;}
+  .admin-done-btn:hover{background:var(--red-dark);}
+  .admin-body{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:24px;}
+  .floor-section{background:var(--gray);border-radius:10px;overflow:hidden;border:1px solid var(--gray2);}
+  .floor-section-header{padding:16px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--gray2);}
+  .floor-section-header.mens{border-left:4px solid var(--mens);}
+  .floor-section-header.womens{border-left:4px solid var(--womens);}
+  .fsh-left{display:flex;align-items:center;gap:10px;}
+  .fsh-icon{font-size:22px;}
+  .fsh-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;}
+  .fsh-count{font-size:12px;color:var(--muted);margin-top:1px;}
+  .bulk-area{padding:14px 18px;border-bottom:1px solid var(--gray2);}
+  .bulk-label{font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:600;margin-bottom:8px;}
+  .bulk-row{display:flex;gap:8px;}
+  .bulk-input{flex:1;background:var(--gray2);border:2px solid var(--gray3);color:var(--white);padding:11px 14px;border-radius:6px;font-family:'Barlow',sans-serif;font-size:14px;outline:none;transition:border-color 0.15s,height 0.15s;resize:none;height:44px;line-height:1.4;}
+  .bulk-input:focus{border-color:var(--gray4);height:88px;}
+  .bulk-input::placeholder{color:var(--muted);}
+  .bulk-add-btn{background:var(--gray3);border:none;color:var(--white);padding:0 18px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:background 0.12s;align-self:flex-start;height:44px;}
+  .bulk-add-btn:hover{background:var(--gray4);}
+  .bulk-hint{font-size:11px;color:var(--muted);margin-top:6px;}
+  .staff-chips{padding:14px 18px;display:flex;flex-wrap:wrap;gap:8px;min-height:56px;}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--gray2);border:1px solid var(--gray3);padding:6px 10px 6px 14px;border-radius:30px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;}
+  .chip.mens-chip{border-color:rgba(26,111,196,0.5);}
+  .chip.womens-chip{border-color:rgba(181,66,138,0.5);}
+  .chip-del{width:20px;height:20px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted);background:var(--gray3);line-height:1;transition:all 0.12s;flex-shrink:0;}
+  .chip-del:hover{background:var(--red);color:#fff;}
+  .empty-chips{color:var(--muted);font-size:13px;padding:4px 0;font-style:italic;}
+  .clear-row{padding:0 18px 14px;}
+  .clear-btn{background:none;border:1px solid var(--gray3);color:var(--muted);padding:8px 16px;border-radius:6px;font-size:12px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.12s;font-family:'Barlow',sans-serif;}
+  .clear-btn:hover{border-color:var(--red);color:var(--red);}
+
+  /* SELECT SCREEN */
+  #select-screen{background:var(--black);}
+  .sel-header{flex-shrink:0;padding:28px 24px 22px;position:relative;overflow:hidden;}
+  .sel-header.mens{background:var(--mens);}
+  .sel-header.womens{background:var(--womens);}
+  .sel-header::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.07);}
+  .sel-back{display:inline-flex;align-items:center;gap:6px;font-size:12px;letter-spacing:2px;text-transform:uppercase;opacity:0.7;cursor:pointer;margin-bottom:10px;border:none;background:none;color:#fff;padding:0;font-family:'Barlow',sans-serif;font-weight:600;}
+  .sel-back:hover{opacity:1;}
+  .sel-floor-tag{font-size:11px;font-weight:600;letter-spacing:4px;text-transform:uppercase;opacity:0.65;margin-bottom:4px;}
+  .sel-floor-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:44px;line-height:0.9;letter-spacing:-1px;position:relative;z-index:1;}
+  .sel-body{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:13px;}
+  .search-wrap{position:relative;flex-shrink:0;}
+  .search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);opacity:0.4;pointer-events:none;}
+  #staff-search{width:100%;background:var(--gray2);border:2px solid var(--gray3);color:var(--white);padding:13px 13px 13px 42px;border-radius:6px;font-family:'Barlow',sans-serif;font-size:16px;outline:none;transition:border-color 0.15s;}
+  #staff-search::placeholder{color:var(--muted);}
+  .list-label{font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;font-weight:600;flex-shrink:0;}
+  #staff-list-wrap{flex:1;overflow-y:auto;border-radius:6px;min-height:80px;}
+  .staff-item{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--gray);border:2px solid transparent;border-bottom:1px solid var(--gray2);cursor:pointer;transition:all 0.12s;position:relative;}
+  .staff-item:first-child{border-radius:6px 6px 0 0;}
+  .staff-item:last-child{border-radius:0 0 6px 6px;border-bottom:2px solid transparent;}
+  .staff-item:only-child{border-radius:6px;}
+  .staff-item:hover{background:var(--gray2);}
+  .staff-item.selected.mens-sel{border-color:var(--mens)!important;background:rgba(26,111,196,0.1);}
+  .staff-item.selected.womens-sel{border-color:var(--womens)!important;background:rgba(181,66,138,0.1);}
+  .sel-stripe{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:4px 0 0 4px;display:none;}
+  .staff-item.selected .sel-stripe{display:block;}
+  .staff-item.selected.mens-sel .sel-stripe{background:var(--mens);}
+  .staff-item.selected.womens-sel .sel-stripe{background:var(--womens);}
+  .si-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:21px;}
+  .si-meta{font-size:12px;color:var(--muted);text-align:right;line-height:1.4;}
+  .si-meta strong{display:block;font-family:'Barlow Condensed',sans-serif;font-size:17px;color:var(--white);font-weight:700;}
+  .no-results{padding:20px;text-align:center;color:var(--muted);font-size:14px;}
+  .enter-btn{flex-shrink:0;width:100%;border:none;color:#fff;padding:17px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;letter-spacing:3px;cursor:pointer;text-transform:uppercase;transition:background 0.15s,opacity 0.15s;}
+  .enter-btn.mens{background:var(--mens);}
+  .enter-btn.mens:not(:disabled):hover{background:var(--mens-dark);}
+  .enter-btn.womens{background:var(--womens);}
+  .enter-btn.womens:not(:disabled):hover{background:var(--womens-dark);}
+  .enter-btn:disabled{background:var(--gray3)!important;opacity:0.5;cursor:default;}
+
+  /* MAIN SCREEN */
+  #main-screen{background:var(--black);}
+  .top-bar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--gray2);}
+  .top-bar.mens{border-left:4px solid var(--mens);}
+  .top-bar.womens{border-left:4px solid var(--womens);}
+  .tb-left{display:flex;align-items:center;gap:12px;}
+  .tb-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;flex-shrink:0;}
+  .tb-avatar.mens{background:var(--mens);}
+  .tb-avatar.womens{background:var(--womens);}
+  .tb-floor-label{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+  .tb-name{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;line-height:1.1;}
+  .switch-btn{background:none;border:1px solid var(--gray3);color:var(--muted);padding:8px 14px;border-radius:20px;font-family:'Barlow',sans-serif;font-size:12px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.12s;}
+  .switch-btn:hover{border-color:var(--white);color:var(--white);}
+  .turn-alert{flex-shrink:0;padding:14px 20px;display:none;align-items:center;gap:14px;animation:alert-pulse 1.2s ease infinite alternate;}
+  .turn-alert.mens{background:var(--mens);}
+  .turn-alert.womens{background:var(--womens);}
+  .turn-alert.show{display:flex;}
+  @keyframes alert-pulse{from{filter:brightness(1);}to{filter:brightness(1.2);}}
+  .alert-icon{font-size:26px;flex-shrink:0;}
+  .alert-text h3{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:21px;}
+  .alert-text p{font-size:12px;opacity:0.85;}
+  .stat-row{flex-shrink:0;display:flex;gap:10px;padding:12px 18px;border-bottom:1px solid var(--gray2);}
+  .stat-pill{flex:1;background:var(--gray);border-radius:8px;padding:11px 14px;text-align:center;border:1px solid var(--gray2);}
+  .stat-pill.hl-mens{border-color:var(--mens);background:rgba(26,111,196,0.1);}
+  .stat-pill.hl-womens{border-color:var(--womens);background:rgba(181,66,138,0.1);}
+  .stat-pill-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:30px;line-height:1;}
+  .stat-pill.hl-mens .stat-pill-val{color:var(--mens);}
+  .stat-pill.hl-womens .stat-pill-val{color:var(--womens);}
+  .stat-pill-lbl{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+  .action-row{flex-shrink:0;display:flex;gap:10px;padding:0 18px 12px;}
+  .act-btn{flex:1;padding:13px 10px;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:2px solid;transition:all 0.12s;text-align:center;}
+  .act-served.mens{background:var(--mens);border-color:var(--mens);color:#fff;}
+  .act-served.mens:hover{background:var(--mens-dark);}
+  .act-served.womens{background:var(--womens);border-color:var(--womens);color:#fff;}
+  .act-served.womens:hover{background:var(--womens-dark);}
+  .act-skip{background:transparent;border-color:var(--gray3);color:var(--muted);}
+  .act-skip:hover{border-color:var(--white);color:var(--white);}
+  .act-rejoin.mens{background:transparent;border-color:var(--mens);color:var(--mens);}
+  .act-rejoin.mens:hover{background:var(--mens);color:#fff;}
+  .act-rejoin.womens{background:transparent;border-color:var(--womens);color:var(--womens);}
+  .act-rejoin.womens:hover{background:var(--womens);color:#fff;}
+  .act-full{flex:1;}
+  .queue-scroll{flex:1;overflow-y:auto;}
+  .section-title{padding:10px 18px 5px;font-size:10px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;font-weight:600;display:flex;align-items:center;justify-content:space-between;}
+  .count-badge{background:var(--gray2);padding:2px 8px;border-radius:10px;font-size:11px;color:var(--muted);}
+  .q-item{display:flex;align-items:center;gap:13px;padding:12px 18px;border-bottom:1px solid var(--gray2);position:relative;}
+  .q-item.q-me.mens-q::after,.q-item.q-me.womens-q::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+  .q-item.q-me.mens-q::after{background:var(--mens);}
+  .q-item.q-me.womens-q::after{background:var(--womens);}
+  .q-item.q-next.mens-q{background:rgba(26,111,196,0.08);}
+  .q-item.q-next.womens-q{background:rgba(181,66,138,0.08);}
+  .q-rank{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:19px;color:var(--gray4);min-width:28px;text-align:center;flex-shrink:0;}
+  .q-item.q-next.mens-q .q-rank{color:var(--mens);}
+  .q-item.q-next.womens-q .q-rank{color:var(--womens);}
+  .q-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;color:var(--muted);background:var(--gray2);flex-shrink:0;}
+  .q-item.q-next.mens-q .q-avatar{background:var(--mens);color:#fff;}
+  .q-item.q-next.womens-q .q-avatar{background:var(--womens);color:#fff;}
+  .q-item.q-me.mens-q .q-avatar{border:2px solid var(--mens);color:var(--mens);}
+  .q-item.q-me.womens-q .q-avatar{border:2px solid var(--womens);color:var(--womens);}
+  .q-info{flex:1;min-width:0;}
+  .q-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .you-tag{display:inline;font-size:10px;color:#fff;padding:1px 5px;border-radius:3px;letter-spacing:1px;vertical-align:middle;margin-left:6px;font-family:'Barlow',sans-serif;font-weight:600;}
+  .you-tag.mens{background:var(--mens);}
+  .you-tag.womens{background:var(--womens);}
+  .q-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+  .q-served{text-align:right;flex-shrink:0;}
+  .q-served-num{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;line-height:1;}
+  .q-served-lbl{font-size:10px;color:var(--muted);}
+  .skip-item{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid rgba(255,255,255,0.04);opacity:0.4;}
+  .skip-dot{width:7px;height:7px;border-radius:50%;background:var(--gray4);flex-shrink:0;}
+  .skip-name{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:17px;flex:1;}
+  .skip-served{font-size:12px;color:var(--muted);}
+  .turn-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:200;display:none;align-items:center;justify-content:center;padding:24px;}
+  .turn-overlay.show{display:flex;}
+  .turn-card{border-radius:16px;padding:44px 32px 36px;text-align:center;max-width:300px;width:100%;animation:pop-in 0.35s cubic-bezier(0.175,0.885,0.32,1.275) forwards;}
+  .turn-card.mens{background:var(--mens);}
+  .turn-card.womens{background:var(--womens);}
+  @keyframes pop-in{from{transform:scale(0.75) translateY(40px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+  .turn-emoji{font-size:52px;margin-bottom:10px;display:block;}
+  .turn-card h2{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:50px;line-height:0.9;letter-spacing:-1px;margin-bottom:10px;}
+  .turn-card p{font-size:14px;opacity:0.85;margin-bottom:28px;}
+  .turn-dismiss{background:rgba(0,0,0,0.25);border:2px solid rgba(255,255,255,0.3);color:#fff;padding:15px 36px;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;width:100%;}
+  ::-webkit-scrollbar{width:3px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--gray3);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- FLOOR PICKER -->
+<div id="floor-screen" class="screen active">
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 24px;">
+    <div class="floor-brand">Nike · Sales Floor</div>
+    <div class="floor-title">FLOOR<br>QUEUE</div>
+    <div class="floor-cards">
+      <div class="floor-card mens" onclick="pickFloor('mens')">
+        <div><div class="fc-label">Floor</div><div class="fc-name">MEN'S</div><div class="fc-count" id="mens-count">—</div></div>
+        <div class="fc-icon">👟</div>
+      </div>
+      <div class="floor-card womens" onclick="pickFloor('womens')">
+        <div><div class="fc-label">Floor</div><div class="fc-name">WOMEN'S</div><div class="fc-count" id="womens-count">—</div></div>
+        <div class="fc-icon">👠</div>
+      </div>
+    </div>
+    <button class="setup-link" onclick="showScreen('admin')">⚙ Manage Staff Names</button>
+  </div>
+</div>
+
+<!-- ADMIN SCREEN -->
+<div id="admin-screen" class="screen">
+  <div class="admin-header">
+    <div>
+      <div style="font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:2px;">Setup</div>
+      <h2>MANAGE STAFF</h2>
+    </div>
+    <button class="admin-done-btn" onclick="adminDone()">DONE ✓</button>
+  </div>
+  <div class="admin-body">
+
+    <!-- MEN'S -->
+    <div class="floor-section">
+      <div class="floor-section-header mens">
+        <div class="fsh-left">
+          <span class="fsh-icon">👟</span>
+          <div><div class="fsh-title">MEN'S FLOOR</div><div class="fsh-count" id="mens-staff-count">0 staff members</div></div>
+        </div>
+      </div>
+      <div class="bulk-area">
+        <div class="bulk-label">Add names</div>
+        <div class="bulk-row">
+          <textarea class="bulk-input" id="mens-bulk-input" placeholder="Type one name, or paste many: Ahmed, Sara, Bilal&#10;Or one per line"></textarea>
+          <button class="bulk-add-btn" onclick="bulkAdd('mens')">ADD</button>
+        </div>
+        <div class="bulk-hint">Separate by comma, semicolon, or new line</div>
+      </div>
+      <div class="staff-chips" id="mens-chips"><span class="empty-chips">No staff added yet</span></div>
+      <div class="clear-row"><button class="clear-btn" onclick="clearFloor('mens')">Clear all Men's staff</button></div>
+    </div>
+
+    <!-- WOMEN'S -->
+    <div class="floor-section">
+      <div class="floor-section-header womens">
+        <div class="fsh-left">
+          <span class="fsh-icon">👠</span>
+          <div><div class="fsh-title">WOMEN'S FLOOR</div><div class="fsh-count" id="womens-staff-count">0 staff members</div></div>
+        </div>
+      </div>
+      <div class="bulk-area">
+        <div class="bulk-label">Add names</div>
+        <div class="bulk-row">
+          <textarea class="bulk-input" id="womens-bulk-input" placeholder="Type one name, or paste many: Fatima, Nour, Rania&#10;Or one per line"></textarea>
+          <button class="bulk-add-btn" onclick="bulkAdd('womens')">ADD</button>
+        </div>
+        <div class="bulk-hint">Separate by comma, semicolon, or new line</div>
+      </div>
+      <div class="staff-chips" id="womens-chips"><span class="empty-chips">No staff added yet</span></div>
+      <div class="clear-row"><button class="clear-btn" onclick="clearFloor('womens')">Clear all Women's staff</button></div>
+    </div>
+    <div style="height:16px"></div>
+  </div>
+</div>
+
+<!-- SELECT STAFF -->
+<div id="select-screen" class="screen">
+  <div class="sel-header" id="sel-header">
+    <button class="sel-back" onclick="goBack()">← Back</button>
+    <div class="sel-floor-tag" id="sel-floor-tag">Floor</div>
+    <div class="sel-floor-name" id="sel-floor-name">—</div>
+  </div>
+  <div class="sel-body">
+    <div class="search-wrap">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="staff-search" placeholder="Search your name…" autocomplete="off" oninput="filterStaff()">
+    </div>
+    <div class="list-label">Select your name</div>
+    <div id="staff-list-wrap"></div>
+    <button class="enter-btn" id="enter-btn" onclick="enterFloor()" disabled>ENTER FLOOR</button>
+  </div>
+</div>
+
+<!-- MAIN QUEUE -->
+<div id="main-screen" class="screen">
+  <div class="top-bar" id="top-bar">
+    <div class="tb-left">
+      <div class="tb-avatar" id="tb-avatar">?</div>
+      <div>
+        <div class="tb-floor-label" id="tb-floor-label">Floor</div>
+        <div class="tb-name" id="tb-name">—</div>
+      </div>
+    </div>
+    <button class="switch-btn" onclick="switchUser()">Switch</button>
+  </div>
+  <div class="turn-alert" id="turn-alert">
+    <div class="alert-icon">🎯</div>
+    <div class="alert-text"><h3>IT'S YOUR TURN!</h3><p>Head to the floor — a customer is waiting</p></div>
+  </div>
+  <div class="stat-row">
+    <div class="stat-pill" id="stat-pos"><div class="stat-pill-val" id="my-pos-val">—</div><div class="stat-pill-lbl">Position</div></div>
+    <div class="stat-pill"><div class="stat-pill-val" id="my-served-val">0</div><div class="stat-pill-lbl">Served today</div></div>
+    <div class="stat-pill"><div class="stat-pill-val" id="queue-size-val">0</div><div class="stat-pill-lbl">In queue</div></div>
+  </div>
+  <div class="action-row" id="action-row"></div>
+  <div class="queue-scroll">
+    <div class="section-title">Active Queue <span class="count-badge" id="q-count">0</span></div>
+    <div id="queue-list"></div>
+    <div id="skipped-section" style="display:none">
+      <div class="section-title" style="margin-top:6px">Skipped / On Break <span class="count-badge" id="skip-count">0</span></div>
+      <div id="skipped-list"></div>
+    </div>
+    <div style="height:30px"></div>
+  </div>
+</div>
+
+<!-- TURN OVERLAY -->
+<div class="turn-overlay" id="turn-overlay">
+  <div class="turn-card" id="turn-card">
+    <span class="turn-emoji">🎯</span>
+    <h2>YOUR<br>TURN!</h2>
+    <p>You're up — a customer just walked in!</p>
+    <button class="turn-dismiss" onclick="dismissOverlay()">GOT IT</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY='nike-two-floor-v2';
+let state={mens:{staff:[],queue:[],skipped:[]},womens:{staff:[],queue:[],skipped:[]}};
+let currentFloor=null,currentUser=null,selectedName=null,pollTimer=null,lastSig='';
+
+async function persist(){try{await window.storage.set(STORAGE_KEY,JSON.stringify(state),true);}catch(e){}}
+async function hydrate(){try{const r=await window.storage.get(STORAGE_KEY,true);if(r?.value){const d=JSON.parse(r.value);if(d?.mens&&d?.womens)state=d;}}catch(e){}}
+const initials=n=>n.slice(0,2).toUpperCase();
+const ordinal=n=>{const s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);};
+const fd=()=>state[currentFloor];
+
+// ADMIN
+function renderAdmin(){
+  ['mens','womens'].forEach(floor=>{
+    const data=state[floor];
+    document.getElementById(floor+'-staff-count').textContent=data.staff.length+' staff member'+(data.staff.length!==1?'s':'');
+    const wrap=document.getElementById(floor+'-chips');
+    if(!data.staff.length){wrap.innerHTML='<span class="empty-chips">No staff added yet</span>';return;}
+    wrap.innerHTML=data.staff.map(s=>`<div class="chip ${floor}-chip">${s.name}<button class="chip-del" onclick="removeStaff('${floor}','${s.name.replace(/'/g,"\\'")}')">×</button></div>`).join('');
+  });
+}
+
+function bulkAdd(floor){
+  const inp=document.getElementById(floor+'-bulk-input');
+  const raw=inp.value.trim();
+  if(!raw)return;
+  const names=raw.split(/[\n,;]+/).map(n=>n.trim()).filter(n=>n.length>0);
+  const data=state[floor];
+  let added=0;
+  names.forEach(name=>{
+    const n=name.slice(0,24);
+    if(!data.staff.find(s=>s.name.toLowerCase()===n.toLowerCase())){
+      data.staff.push({name:n,served:0});
+      data.queue.push(n);
+      added++;
+    }
+  });
+  inp.value='';
+  if(added>0){persist();renderAdmin();}
+}
+
+function removeStaff(floor,name){
+  const d=state[floor];
+  d.staff=d.staff.filter(s=>s.name!==name);
+  d.queue=d.queue.filter(n=>n!==name);
+  d.skipped=d.skipped.filter(n=>n!==name);
+  persist();renderAdmin();
+}
+
+function clearFloor(floor){
+  if(!confirm('Remove all staff from the '+(floor==='mens'?"Men's":"Women's")+' floor?'))return;
+  state[floor]={staff:[],queue:[],skipped:[]};
+  persist();renderAdmin();
+}
+
+function adminDone(){updateFloorCounts();showScreen('floor');}
+
+// FLOOR PICKER
+function updateFloorCounts(){
+  ['mens','womens'].forEach(f=>{
+    const d=state[f];
+    document.getElementById(f+'-count').textContent=d.queue.length+' in queue · '+d.staff.reduce((a,s)=>a+s.served,0)+' served today';
+  });
+}
+
+function pickFloor(floor){
+  currentFloor=floor;selectedName=null;
+  if(!state[floor].staff.length){
+    alert('No staff added to the '+(floor==='mens'?"Men's":"Women's")+' floor yet.\nTap "Manage Staff Names" to add your team.');
+    return;
+  }
+  document.getElementById('sel-header').className='sel-header '+floor;
+  document.getElementById('sel-floor-tag').textContent='Nike · '+(floor==='mens'?"Men's":"Women's");
+  document.getElementById('sel-floor-name').textContent=floor==='mens'?"MEN'S FLOOR":"WOMEN'S FLOOR";
+  document.getElementById('enter-btn').className='enter-btn '+floor;
+  document.getElementById('enter-btn').disabled=true;
+  document.getElementById('staff-search').value='';
+  showScreen('select');renderStaffList();
+}
+
+// SELECT
+function filterStaff(){renderStaffList(document.getElementById('staff-search').value.toLowerCase());}
+
+function renderStaffList(filter=''){
+  const wrap=document.getElementById('staff-list-wrap');
+  const data=fd();
+  const list=filter?data.staff.filter(s=>s.name.toLowerCase().includes(filter)):data.staff;
+  if(!list.length){wrap.innerHTML='<div class="no-results">'+(filter?'No match for "'+filter+'"':'No staff on this floor yet')+'</div>';return;}
+  wrap.innerHTML=list.map(s=>{
+    const pos=data.queue.indexOf(s.name),sk=data.skipped.includes(s.name);
+    const status=sk?'On break':pos>=0?'#'+(pos+1)+' in queue':'Not in queue';
+    const sel=selectedName===s.name;
+    const safe=s.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<div class="staff-item'+(sel?' selected '+currentFloor+'-sel':'')+'" onclick="selectStaff(\''+safe+'\')">'
+      +'<div class="sel-stripe"></div>'
+      +'<div class="si-name">'+s.name+'</div>'
+      +'<div class="si-meta"><strong>'+s.served+'</strong>'+status+'</div></div>';
+  }).join('');
+}
+
+function selectStaff(name){selectedName=name;document.getElementById('enter-btn').disabled=false;renderStaffList(document.getElementById('staff-search').value.toLowerCase());}
+
+function enterFloor(){
+  if(!selectedName)return;
+  currentUser=selectedName;
+  const data=fd();
+  if(!data.queue.includes(currentUser)&&!data.skipped.includes(currentUser)){data.queue.push(currentUser);persist();}
+  document.getElementById('tb-floor-label').textContent=currentFloor==='mens'?"Men's Floor":"Women's Floor";
+  document.getElementById('tb-name').textContent=currentUser.toUpperCase();
+  const av=document.getElementById('tb-avatar');av.textContent=initials(currentUser);av.className='tb-avatar '+currentFloor;
+  document.getElementById('top-bar').className='top-bar '+currentFloor;
+  document.getElementById('turn-alert').className='turn-alert '+currentFloor;
+  document.getElementById('turn-card').className='turn-card '+currentFloor;
+  document.getElementById('stat-pos').className='stat-pill hl-'+currentFloor;
+  showScreen('main');lastSig='';startPoll();renderMain();
+}
+
+function goBack(){showScreen('floor');updateFloorCounts();}
+
+// MAIN
+function renderMain(){
+  const data=fd(),pos=data.queue.indexOf(currentUser),skipped=data.skipped.includes(currentUser);
+  const st=data.staff.find(s=>s.name===currentUser),isUp=pos===0&&!skipped,f=currentFloor;
+  document.getElementById('my-pos-val').textContent=skipped?'—':pos<0?'Out':ordinal(pos+1);
+  document.getElementById('my-served-val').textContent=st?.served??0;
+  document.getElementById('queue-size-val').textContent=data.queue.length;
+  document.getElementById('turn-alert').classList.toggle('show',isUp);
+  const ar=document.getElementById('action-row');
+  if(skipped||pos<0){ar.innerHTML='<button class="act-btn act-rejoin '+f+' act-full" onclick="rejoinQueue()">↩ REJOIN QUEUE</button>';}
+  else if(pos===0){ar.innerHTML='<button class="act-btn act-served '+f+'" onclick="markServed()">✓ SERVED</button><button class="act-btn act-skip" onclick="skipTurn()">SKIP</button>';}
+  else{ar.innerHTML='<button class="act-btn act-skip act-full" onclick="skipTurn()">SKIP MY TURN / BREAK</button>';}
+  document.getElementById('q-count').textContent=data.queue.length;
+  document.getElementById('queue-list').innerHTML=data.queue.map((name,i)=>{
+    const isMe=name===currentUser,s=data.staff.find(x=>x.name===name);
+    return '<div class="q-item'+(isMe?' q-me':'')+(i===0?' q-next':'')+' '+f+'-q">'
+      +'<div class="q-rank">'+(i+1)+'</div>'
+      +'<div class="q-avatar">'+initials(name)+'</div>'
+      +'<div class="q-info"><div class="q-name">'+name+(isMe?'<span class="you-tag '+f+'">YOU</span>':'')+'</div><div class="q-sub">'+(i===0?'🟢 Up next':'')+'</div></div>'
+      +'<div class="q-served"><div class="q-served-num">'+(s?.served??0)+'</div><div class="q-served-lbl">served</div></div></div>';
+  }).join('');
+  const ss=document.getElementById('skipped-section');
+  if(data.skipped.length){
+    ss.style.display='block';
+    document.getElementById('skip-count').textContent=data.skipped.length;
+    document.getElementById('skipped-list').innerHTML=data.skipped.map(name=>{
+      const s=data.staff.find(x=>x.name===name);
+      return '<div class="skip-item"><div class="skip-dot"></div><div class="skip-name">'+name+'</div><div class="skip-served">'+(s?.served??0)+' served</div></div>';
+    }).join('');
+  }else{ss.style.display='none';}
+}
+
+function markServed(){const d=fd();if(d.queue[0]!==currentUser)return;d.queue.shift();d.queue.push(currentUser);const s=d.staff.find(x=>x.name===currentUser);if(s)s.served++;persist();renderMain();}
+function skipTurn(){const d=fd(),i=d.queue.indexOf(currentUser);if(i>=0)d.queue.splice(i,1);if(!d.skipped.includes(currentUser))d.skipped.push(currentUser);persist();renderMain();}
+function rejoinQueue(){const d=fd(),i=d.skipped.indexOf(currentUser);if(i>=0)d.skipped.splice(i,1);if(!d.queue.includes(currentUser))d.queue.push(currentUser);persist();renderMain();}
+
+function startPoll(){
+  if(pollTimer)clearInterval(pollTimer);
+  pollTimer=setInterval(async()=>{
+    await hydrate();
+    const data=fd(),sig=JSON.stringify({q:data.queue,s:data.skipped});
+    if(sig!==lastSig){
+      const prev=lastSig?JSON.parse(lastSig):null;
+      const wasFirst=prev?prev.q[0]===currentUser:false;
+      const isFirst=data.queue[0]===currentUser;
+      lastSig=sig;renderMain();
+      if(isFirst&&!wasFirst)triggerAlert();
+    }
+  },1500);
+}
+
+function triggerAlert(){playSound();if(navigator.vibrate)navigator.vibrate([200,100,200,100,400]);document.getElementById('turn-overlay').classList.add('show');}
+function dismissOverlay(){document.getElementById('turn-overlay').classList.remove('show');}
+
+function playSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [[523,0,0.18],[659,0.2,0.18],[784,0.4,0.25],[1047,0.68,0.4]].forEach(([freq,start,dur])=>{
+      const osc=ctx.createOscillator(),gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.type='sine';osc.frequency.value=freq;
+      const t=ctx.currentTime+start;
+      gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(0.5,t+0.04);gain.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      osc.start(t);osc.stop(t+dur+0.05);
+    });
+  }catch(e){}
+}
+
+function showScreen(name){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(name+'-screen').classList.add('active');}
+function switchUser(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}currentUser=selectedName=null;lastSig='';showScreen('floor');updateFloorCounts();}
+
+(async()=>{await hydrate();updateFloorCounts();renderAdmin();})();
+</script>
+</body>
+</html>
